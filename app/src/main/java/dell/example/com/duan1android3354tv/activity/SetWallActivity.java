@@ -1,6 +1,9 @@
 package dell.example.com.duan1android3354tv.activity;
 
 
+import android.app.Fragment;
+import android.app.FragmentManager;
+import android.app.ProgressDialog;
 import android.app.WallpaperManager;
 import android.content.ContentValues;
 import android.content.Intent;
@@ -39,6 +42,7 @@ import java.util.List;
 
 import dell.example.com.duan1android3354tv.ImageCacher;
 import dell.example.com.duan1android3354tv.R;
+import dell.example.com.duan1android3354tv.frament.FramentCommunity;
 import dell.example.com.duan1android3354tv.model.Favorite;
 import dell.example.com.duan1android3354tv.sqlite.DatabaseHelper;
 
@@ -47,14 +51,19 @@ public class SetWallActivity extends AppCompatActivity {
     private TextView set;
     private TextView nameImg;
     private TextView save;
+    private ProgressDialog pDialog;
     private TextView favorite;
     private List<Favorite> list2 = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        final DatabaseHelper databaseHelper = new DatabaseHelper(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.setimg);
+        final DatabaseHelper databaseHelper = new DatabaseHelper(this);
+        pDialog = new ProgressDialog(SetWallActivity.this);
+        pDialog.setMessage("Bạn đợi chút nha");
+        pDialog.setIndeterminate(false);
+        pDialog.setCancelable(false);
         Intent intent = getIntent();
         Bundle bundle = intent.getBundleExtra("bun");
         final String link = bundle.getString("link");
@@ -69,6 +78,8 @@ public class SetWallActivity extends AppCompatActivity {
         set.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
+                pDialog.show();
                 final Intent intent2 = new Intent(Intent.ACTION_MAIN);
                 intent2.addCategory(Intent.CATEGORY_HOME);
                 intent2.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -81,7 +92,7 @@ public class SetWallActivity extends AppCompatActivity {
                             public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
                                 try {
                                     WallpaperManager.getInstance(getApplicationContext()).setBitmap(resource);
-
+                                    pDialog.dismiss();
                                     startActivity(intent2);
                                 } catch (IOException e) {
                                     e.printStackTrace();
@@ -102,6 +113,7 @@ public class SetWallActivity extends AppCompatActivity {
                 String a = null;
                 String b = "daco";
                 String name1 = nameImg.getText().toString().trim();
+                list2=databaseHelper.getFavoriteAll();
                 for (int i = 0; i < list2.size(); i++) {
                     Favorite favorite1 = list2.get(i);
                     if (favorite1.getName().equals(name1)) {

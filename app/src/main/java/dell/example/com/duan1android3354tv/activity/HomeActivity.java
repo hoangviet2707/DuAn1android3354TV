@@ -1,5 +1,6 @@
 package dell.example.com.duan1android3354tv.activity;
 
+import android.app.ProgressDialog;
 import android.support.v4.app.Fragment;
 import android.app.SearchManager;
 import android.content.Intent;
@@ -19,6 +20,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -28,11 +30,21 @@ import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import dell.example.com.duan1android3354tv.ApiService;
 import dell.example.com.duan1android3354tv.HitAdapter;
 import dell.example.com.duan1android3354tv.R;
+import dell.example.com.duan1android3354tv.RetroClient;
 import dell.example.com.duan1android3354tv.adapter.Adapter_commuity;
 import dell.example.com.duan1android3354tv.frament.FramentCommunity;
 import dell.example.com.duan1android3354tv.frament.FramentFavorites;
+import dell.example.com.duan1android3354tv.model.HDWALLPAPER;
+import dell.example.com.duan1android3354tv.model.Hit;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class HomeActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
     private Toolbar toolbar;
@@ -45,13 +57,20 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
     private EditText edtseaech;
     private ViewPager viewPager;
     private TextView txtTenUS;
+    private ProgressDialog pDialog;
     private SearchView searchView;
+    private List<HDWALLPAPER> list=new ArrayList<>();
+
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.home);
+        pDialog = new ProgressDialog(HomeActivity.this);
+        pDialog.setMessage("Bạn đợi chút nha");
+        pDialog.setIndeterminate(false);
+        pDialog.setCancelable(false);
 //        Intent intent1=getIntent();
 //        Bundle bundle1=intent1.getBundleExtra("b");
 //        String ten=bundle1.getString("tenus");
@@ -88,9 +107,64 @@ public class HomeActivity extends AppCompatActivity implements NavigationView.On
 
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
-            public boolean onQueryTextSubmit(String query) {
-                Toast.makeText(HomeActivity.this, "...", Toast.LENGTH_SHORT).show();
+            public boolean onQueryTextSubmit(final String query) {
+                pDialog.show();
+                ApiService api = RetroClient.getApiService();
+
+                /**
+                 * Calling JSON
+                 */
+                Call<Hit> call = api.getMyJSON();
+
+                /**
+                 * Enqueue Callback will be call when get response...
+                 */
+                call.enqueue(new Callback<Hit>() {
+                    @Override
+                    public void onResponse(Call<Hit> call, Response<Hit> response) {
+                        //Dismiss Dialog
+                     boolean a=true;
+
+                        if (response.isSuccessful()) {
+                            /**
+                             * Got Successfully
+                             */
+                            list =  response.body().getHDWALLPAPER();
+                            HDWALLPAPER hdwallpaper=new HDWALLPAPER();
+                            for (int i = 0; i <list.size() ; i++) {
+                                if (query.equalsIgnoreCase(list.get(i).getCategoryName())){
+                                    hdwallpaper=list.get(i);
+                                    a=true;
+                                    Intent intent=new Intent(HomeActivity.this,SetWallActivity.class);
+                                    Bundle bundle=new Bundle();
+                                    bundle.putString("link",hdwallpaper.getWallpaperImage());
+                                    bundle.putString("name",hdwallpaper.getCategoryName());
+                                    intent.putExtra("bun",bundle);
+                                    startActivity(intent);
+                                    pDialog.dismiss();
+                                    break;
+                                }else {
+                                    a=false;
+                                }
+
+                            }
+                            if(a==false){
+                                pDialog.dismiss();
+                                Toast.makeText(HomeActivity.this, "Không có ảnh bạn cần tìm", Toast.LENGTH_SHORT).show();
+
+                            }
+
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<Hit> call, Throwable t) {
+
+                    }
+                });
+
                 return false;
+
             }
 
             @Override
